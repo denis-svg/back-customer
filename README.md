@@ -11,13 +11,31 @@
   {
     "field": "Mobile",
     "values": [
-      100, 24, 5435, ...
+      [0, 100], [1,24], [2,5435], [hour, number of clicks]
     ]
   },
   {
     "field": "Desktop",
     "values": [
-      414, 5349, 106456, ...
+      [0, 100], [1,24], [2,5435], [hour, number of clicks]
+    ]
+  }
+]
+```
+
+#### Example: GET /api/statistics/clicksToConvert/Locale
+```json
+[
+  {
+    "field": "en-US",
+    "values": [
+      [0, 100], [1,24], [2,5435], [hour, number of clicks]
+    ]
+  },
+  {
+    "field": "ru",
+    "values": [
+      [0, 100], [1,24], [2,5435], [hour, number of clicks]
     ]
   }
 ]
