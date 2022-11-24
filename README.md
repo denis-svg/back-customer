@@ -6,6 +6,7 @@
 
 #### Example: GET /api/statistics/clicksToConvert/Device
 
+# Requests schema
 ```json
 [
   {
