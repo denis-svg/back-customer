@@ -4,39 +4,30 @@
 ## In order to run the api type the following command
 ### python api.py
 
-#### Example: GET /api/statistics/clicksToConvert/Device
+#### Example: GET /api/metrics/clicks/Device
 
 ```json
-[
-  {
-    "field": "Mobile",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
+{ "Mobile":
+    [
+      {
+        "period": "1AM",
+        "value": 12
+      },
+      {
+        "period": "2AM",
+        "value": 14
+      }
     ]
-  },
-  {
-    "field": "Desktop",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
-    ]
-  }
-]
-```
-
-#### Example: GET /api/statistics/clicksToConvert/Locale
-```json
-[
-  {
-    "field": "en-US",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
-    ]
-  },
-  {
-    "field": "ru",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
-    ]
-  }
-]
+   "Desktop":
+     [
+        {
+          "period": "1AM",
+          "value": 12
+        },
+        {
+          "period": "2AM",
+          "value": 14
+        }
+      ]
+}
 ```
