@@ -62,9 +62,20 @@
 }
 ```
 #### Example: GET /api/statistics/clicks
-#### ?event_name=conversion (by default)
+#### ?event_name=conversion (by default) (conversion, share_experience)
+#### ?timestamp=today (by default) (today, lastweek, lastmonth)
 ```json
 { "field": "total"
   "values": [1, 4154, 64 7, 86, 5, 1, 7, 3]
+}
+```
+
+#### Example: GET /api/statistics/clicks/device
+#### ?event_name=conversion (by default) (conversion, share_experience)
+#### ?timestamp=today (by default) (today, lastweek, lastmonth)
+```json
+{ 
+  "Mobile": [1, 4154, 64 7, 86, 5, 1, 7, 3],
+  "Desktop": [1, 4154, 64 7, 86, 5, 1, 7, 3],
 }
 ```
