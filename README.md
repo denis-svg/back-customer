@@ -6,38 +6,17 @@
 
 #### Example: GET /api/statistics/clicksToConvert/Device
 
-# Requests schema
-```json
-[
-  {
-    "field": "Mobile",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
-    ]
-  },
-  {
-    "field": "Desktop",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
-    ]
-  }
-]
-```
+#### Example: GET /api/metrics/clicks
 
-#### Example: GET /api/statistics/clicksToConvert/Locale
 ```json
 [
   {
-    "field": "en-US",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
-    ]
+    "period": "1AM",
+    "value": 12
   },
   {
-    "field": "ru",
-    "values": [
-      [0, 100], [1,24], [2,5435], [hour, number of clicks]
-    ]
+    "period": "2AM",
+    "value": 14
   }
 ]
 ```
