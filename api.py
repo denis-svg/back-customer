@@ -86,7 +86,47 @@ def clicksL():
 		cnxn.close()
 		return jsonify(out)
 
+@app.route('/api/statistics/clicksToConvert', methods=['GET'])
+def statisticsToday():
+	if request.method == 'GET':
+		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
+                        Server=tcp:prenaissance.database.windows.net,1433;
+                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
+                        TrustServerCertificate=no;Connection Timeout=30;""")
+		cursor = cnxn.cursor()
 
+		events = cursor.execute(f"""SELECT person_id,
+											event_name 
+								FROM Events
+								WHERE DATEPART(dy, clicked_date) = (SELECT DATEPART(dy, clicked_date)
+																		FROM Events
+																		WHERE clicked_date = (SELECT MAX(clicked_date)
+																								FROM Events))
+								ORDER BY clicked_date ASC""").fetchall()
+
+		person_dict = {}
+
+		for event in events:
+			event_name = event[1]
+			person_id = event[0]
+			if person_id not in person_dict:
+				person_dict[person_id] = [event_name]
+			else:
+				person_dict[person_id].append(event_name)
+
+		values = []
+		for person_id in person_dict.keys():
+			counter = 0
+			for event_name in person_dict[person_id]:
+				if event_name == 'conversion':
+					values.append(counter)
+					break
+				counter += 1
+
+		out = {"field":'total', "values":values}
+
+		cnxn.close()
+		return jsonify(out)
 
 if __name__ == '__main__':
 	app.run()
