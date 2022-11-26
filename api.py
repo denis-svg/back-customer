@@ -87,9 +87,18 @@ def clicksL():
 		return jsonify(out)
 
 @app.route('/api/statistics/clicks', methods=['GET'])
-def statisticsToday():
+def statistics():
 	if request.method == 'GET':
 		name = request.args.get("event_name")
+		day = request.args.get("timestamp")
+		if day is None:
+			day = 0
+		elif day == "today":
+			day = 0 
+		elif day == "lastweek":
+			day = 6
+		elif day == "lastmonth":
+			day = 29
 		if name is None:
 			name = 'conversion'
 
@@ -99,14 +108,16 @@ def statisticsToday():
                         TrustServerCertificate=no;Connection Timeout=30;""")
 		cursor = cnxn.cursor()
 
-		events = cursor.execute(f"""SELECT person_id,
-											event_name 
-								FROM Events
-								WHERE DATEPART(dy, clicked_date) = (SELECT DATEPART(dy, clicked_date)
-																		FROM Events
-																		WHERE clicked_date = (SELECT MAX(clicked_date)
-																								FROM Events))
-								ORDER BY clicked_date ASC""").fetchall()
+		events = cursor.execute(f"""DECLARE @day AS INT
+									SET @day = (SELECT DATEPART(dy, clicked_date)
+												FROM Events
+												WHERE clicked_date = (SELECT MAX(clicked_date)
+												FROM Events))
+									SELECT person_id,
+											event_name
+									FROM Events
+									WHERE DATEPART(dy, clicked_date) >= @day - ?
+									ORDER BY clicked_date ASC""", day).fetchall()
 
 		person_dict = {}
 
@@ -128,6 +139,71 @@ def statisticsToday():
 				counter += 1
 
 		out = {"field":'total', "values":values}
+
+		cnxn.close()
+		return jsonify(out)
+
+@app.route('/api/statistics/clicks/device', methods=['GET'])
+def statisticsD():
+	if request.method == 'GET':
+		name = request.args.get("event_name")
+		day = request.args.get("timestamp")
+		if day is None:
+			day = 0
+		elif day == "today":
+			day = 0 
+		elif day == "lastweek":
+			day = 6
+		elif day == "lastmonth":
+			day = 29
+		if name is None:
+			name = 'conversion'
+
+		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
+                        Server=tcp:prenaissance.database.windows.net,1433;
+                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
+                        TrustServerCertificate=no;Connection Timeout=30;""")
+		cursor = cnxn.cursor()
+		# selecting all devices
+		devices = cursor.execute(f"""SELECT DISTINCT device
+								FROM Persons""").fetchall()
+
+		out = {}
+		for device in devices:
+			device = device[0]
+			events = cursor.execute(f"""DECLARE @day AS INT
+										SET @day = (SELECT DATEPART(dy, clicked_date)
+													FROM Events
+													WHERE clicked_date = (SELECT MAX(clicked_date)
+													FROM Events))
+										SELECT Events.person_id,
+												Events.event_name
+										FROM Events
+										INNER JOIN Persons
+										ON Persons.person_id = Events.person_id
+										WHERE DATEPART(dy, clicked_date) >= @day - ? AND device=?
+										ORDER BY clicked_date ASC""", day, device).fetchall()
+
+			person_dict = {}
+
+			for event in events:
+				event_name = event[1]
+				person_id = event[0]
+				if person_id not in person_dict:
+					person_dict[person_id] = [event_name]
+				else:
+					person_dict[person_id].append(event_name)
+
+			values = []
+			for person_id in person_dict.keys():
+				counter = 0
+				for event_name in person_dict[person_id]:
+					if event_name == name:
+						values.append(counter)
+						break
+					counter += 1
+
+			out[device] = values
 
 		cnxn.close()
 		return jsonify(out)
