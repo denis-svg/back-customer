@@ -64,8 +64,7 @@
 #### Example: GET /api/statistics/clicks
 #### ?event_name=conversion (by default)
 ```json
-{ 
-    field:'total',
-    values: [1, 41, 41,5 6, 768, 987]
+{ "field": "total"
+  "values": [1, 4154, 64 7, 86, 5, 1, 7, 3]
 }
 ```
