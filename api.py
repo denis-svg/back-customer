@@ -90,7 +90,7 @@ def clicksL():
 def statisticsToday():
 	if request.method == 'GET':
 		name = request.args.get("event_name")
-		if event_name is None:
+		if name is None:
 			name = 'conversion'
 
 		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
