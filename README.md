@@ -5,9 +5,9 @@
 ### python api.py
 
 #### Example: GET /api/metrics/clicks/Device
-##### this endpoint can also take event_name as parameter example /api/metrics/clicks/Device?event_name=conversion
-##### possible event_names = [conversion, share_experience, global_footer]
-##### default is conversion
+#### this endpoint can also take event_name as parameter example /api/metrics/clicks/Device?event_name=conversion
+#### possible event_names = [conversion, share_experience, global_footer]
+#### default is conversion
 ```json
 { "Mobile":
     [
@@ -34,8 +34,8 @@
 }
 ```
 #### Example: GET /api/metrics/clicks/Locale
-##### this endpoint can also take event_name as parameter example GET /api/metrics/clicks/Locale?event_name=conversion&&n=3
-##### default n = 15 and event_name=conversion
+#### this endpoint can also take event_name as parameter + n(number of locales it's gonna select most used) example GET /api/metrics/clicks/Locale?event_name=conversion&&n=3
+#### default n = 15 and event_name=conversion
 ```json
 { "en-US":
     [
