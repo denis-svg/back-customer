@@ -3,9 +3,13 @@ import pyodbc
 
 app = Flask(__name__)
 
-@app.route('/api/statistics/clicksToConvert/Device', methods=['GET'])
-def ctcD():
+
+@app.route('/api/metrics/clicks/Device', methods=['GET'])
+def clicksD():
 	if request.method == 'GET':
+		event_name = request.args.get("event_name")
+		if event_name is None:
+			event_name = 'conversion'
 		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
                         Server=tcp:prenaissance.database.windows.net,1433;
                         Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
@@ -16,7 +20,7 @@ def ctcD():
 		devices = cursor.execute(f"""SELECT DISTINCT device
 								FROM Persons""").fetchall()
 
-		out = []
+		out = {}
 		for device in devices:
 			device = device[0]
 			res = cursor.execute(f"""SELECT COUNT(*),
@@ -24,18 +28,30 @@ def ctcD():
 										FROM Events
 										INNER JOIN Persons
 										ON Persons.person_id = events.person_id
-										WHERE Events.event_name = 'conversion' AND Persons.device = '{device}'
-										GROUP BY CAST(DATEPART(hour,clicked_date) AS INT)""").fetchall()
+										WHERE Events.event_name = ? AND Persons.device = ?
+										GROUP BY CAST(DATEPART(hour,clicked_date) AS INT)""", event_name ,device).fetchall()
 			values = []
 			for entry in res:
-				values.append([entry[1], entry[0]])
-			out.append({"field":device, "values":values})
+				tm = "AM"
+				if entry[1] > 12:
+					tm = "PM"
+				values.append({"period":str(entry[1]) + tm,
+								"value": entry[0]})
+			out[device] = values
 		cnxn.close()
 		return jsonify(out)
 
-@app.route('/api/statistics/clicksToConvert/Locale', methods=['GET'])
-def ctcL():
+@app.route('/api/metrics/clicks/Locale', methods=['GET'])
+def clicksL():
 	if request.method == 'GET':
+		event_name = request.args.get("event_name")
+		n = request.args.get("n")
+		if n is None:
+			n = 15
+		else:
+			n = int(n)
+		if event_name is None:
+			event_name = 'conversion'
 		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
                         Server=tcp:prenaissance.database.windows.net,1433;
                         Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
@@ -43,13 +59,13 @@ def ctcL():
 		cursor = cnxn.cursor()
 
 		# selecting all devices
-		locales = cursor.execute(f"""SELECT 	TOP(15)
+		locales = cursor.execute(f"""SELECT 	TOP(?)
 												locale
 										FROM Persons
 										GROUP BY locale
-										ORDER BY COUNT(locale) DESC""").fetchall()
+										ORDER BY COUNT(locale) DESC""", n).fetchall()
 
-		out = []
+		out = {}
 		for locale in locales:
 			locale = locale[0]
 			res = cursor.execute(f"""SELECT COUNT(*),
@@ -57,12 +73,16 @@ def ctcL():
 										FROM Events
 										INNER JOIN Persons
 										ON Persons.person_id = events.person_id
-										WHERE Events.event_name = 'conversion' AND Persons.locale = '{locale}'
-										GROUP BY CAST(DATEPART(hour,clicked_date) AS INT)""").fetchall()
+										WHERE Events.event_name = ? AND Persons.locale = ?
+										GROUP BY CAST(DATEPART(hour,clicked_date) AS INT)""", event_name, locale).fetchall()
 			values = []
 			for entry in res:
-				values.append([entry[1], entry[0]])
-			out.append({"field":locale, "values":values})
+				tm = "AM"
+				if entry[1] > 12:
+					tm = "PM"
+				values.append({"period":str(entry[1]) + tm,
+								"value": entry[0]})
+			out[locale] = values
 		cnxn.close()
 		return jsonify(out)
 
