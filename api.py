@@ -86,9 +86,13 @@ def clicksL():
 		cnxn.close()
 		return jsonify(out)
 
-@app.route('/api/statistics/clicksToConvert', methods=['GET'])
+@app.route('/api/statistics/clicks', methods=['GET'])
 def statisticsToday():
 	if request.method == 'GET':
+		name = request.args.get("event_name")
+		if event_name is None:
+			name = 'conversion'
+
 		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
                         Server=tcp:prenaissance.database.windows.net,1433;
                         Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
@@ -118,7 +122,7 @@ def statisticsToday():
 		for person_id in person_dict.keys():
 			counter = 0
 			for event_name in person_dict[person_id]:
-				if event_name == 'conversion':
+				if event_name == name:
 					values.append(counter)
 					break
 				counter += 1
