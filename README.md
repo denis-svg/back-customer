@@ -103,3 +103,19 @@
 }
 ]
 ```
+
+
+#### Example: GET /api/metrics/urls/top-products
+#### ?n=4 (number of urls that you want default is all)
+```json
+[
+{                           				"url":"en/shapoo.html",
+							"uniqueClicks":1414,
+							"totalClicks":5235235,
+							"timeOnPageAvg":3122,
+							"timeOnPageFilteredAvg":121,
+							"pageBeforeConversion":144,
+							"pageBeforeShare":65
+}
+]
+```
