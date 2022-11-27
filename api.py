@@ -1,114 +1,115 @@
 from flask import Flask, request, jsonify
 import pyodbc
 
+
+def getConnection():
+    return pyodbc.connect("""Driver={ODBC Driver 17 for SQL Server};
+                        Server=tcp:prenaissance.database.windows.net,1433;
+                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
+                        TrustServerCertificate=no;Connection Timeout=30;""")
+
+
 app = Flask(__name__)
 
 
 @app.route('/api/metrics/clicks/device', methods=['GET'])
 def metricsClicksDevice():
-	if request.method == 'GET':
-		event_name = request.args.get("event_name")
-		if event_name is None:
-			event_name = 'conversion'
-		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
-		cursor = cnxn.cursor()
+    if request.method == 'GET':
+        event_name = request.args.get("event_name")
+        if event_name is None:
+            event_name = 'conversion'
+        cnxn = getConnection()
+        cursor = cnxn.cursor()
 
-		# selecting all devices
-		devices = cursor.execute(f"""SELECT DISTINCT device
+        # selecting all devices
+        devices = cursor.execute(f"""SELECT DISTINCT device
 								FROM Persons""").fetchall()
 
-		out = {}
-		for device in devices:
-			device = device[0]
-			res = cursor.execute(f"""SELECT COUNT(*),
+        out = {}
+        for device in devices:
+            device = device[0]
+            res = cursor.execute(f"""SELECT COUNT(*),
 											CAST(DATEPART(hour,clicked_date) AS INT)
 										FROM Events
 										INNER JOIN Persons
 										ON Persons.person_id = events.person_id
 										WHERE Events.event_name = ? AND Persons.device = ?
-										GROUP BY CAST(DATEPART(hour,clicked_date) AS INT)""", event_name ,device).fetchall()
-			values = []
-			for entry in res:
-				tm = "AM"
-				if entry[1] > 12:
-					tm = "PM"
-				values.append({"period":str(entry[1]) + tm,
-								"value": entry[0]})
-			out[device] = values
-		cnxn.close()
-		return jsonify(out)
+										GROUP BY CAST(DATEPART(hour,clicked_date) AS INT)""", event_name, device).fetchall()
+            values = []
+            for entry in res:
+                tm = "AM"
+                if entry[1] > 12:
+                    tm = "PM"
+                values.append({"period": str(entry[1]) + tm,
+                               "value": entry[0]})
+            out[device] = values
+        cnxn.close()
+        return jsonify(out)
+
 
 @app.route('/api/metrics/clicks/locale', methods=['GET'])
 def metricsClicksLocale():
-	if request.method == 'GET':
-		event_name = request.args.get("event_name")
-		n = request.args.get("n")
-		if n is None:
-			n = 15
-		else:
-			n = int(n)
-		if event_name is None:
-			event_name = 'conversion'
-		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
-		cursor = cnxn.cursor()
+    if request.method == 'GET':
+        event_name = request.args.get("event_name")
+        n = request.args.get("n")
+        if n is None:
+            n = 15
+        else:
+            n = int(n)
+        if event_name is None:
+            event_name = 'conversion'
+        cnxn = getConnection()
+        cursor = cnxn.cursor()
 
-		# selecting all devices
-		locales = cursor.execute(f"""SELECT 	TOP(?)
+        # selecting all devices
+        locales = cursor.execute(f"""SELECT 	TOP(?)
 												locale
 										FROM Persons
 										GROUP BY locale
 										ORDER BY COUNT(locale) DESC""", n).fetchall()
 
-		out = {}
-		for locale in locales:
-			locale = locale[0]
-			res = cursor.execute(f"""SELECT COUNT(*),
+        out = {}
+        for locale in locales:
+            locale = locale[0]
+            res = cursor.execute(f"""SELECT COUNT(*),
 											CAST(DATEPART(hour,clicked_date) AS INT)
 										FROM Events
 										INNER JOIN Persons
 										ON Persons.person_id = events.person_id
 										WHERE Events.event_name = ? AND Persons.locale = ?
 										GROUP BY CAST(DATEPART(hour,clicked_date) AS INT)""", event_name, locale).fetchall()
-			values = []
-			for entry in res:
-				tm = "AM"
-				if entry[1] > 12:
-					tm = "PM"
-				values.append({"period":str(entry[1]) + tm,
-								"value": entry[0]})
-			out[locale] = values
-		cnxn.close()
-		return jsonify(out)
+            values = []
+            for entry in res:
+                tm = "AM"
+                if entry[1] > 12:
+                    tm = "PM"
+                values.append({"period": str(entry[1]) + tm,
+                               "value": entry[0]})
+            out[locale] = values
+        cnxn.close()
+        return jsonify(out)
+
 
 @app.route('/api/statistics/clicks', methods=['GET'])
 def statisticsClicks():
-	if request.method == 'GET':
-		name = request.args.get("event_name")
-		day = request.args.get("timestamp")
-		if day is None:
-			day = 0
-		elif day == "today":
-			day = 0 
-		elif day == "lastweek":
-			day = 6
-		elif day == "lastmonth":
-			day = 29
-		if name is None:
-			name = 'conversion'
+    if request.method == 'GET':
+        name = request.args.get("event_name")
+        day = request.args.get("timestamp")
+        if day is None:
+            day = 0
+        elif day == "today":
+            day = 0
+        elif day == "lastweek":
+            day = 6
+        elif day == "lastmonth":
+            day = 29
+        if name is None:
+            name = 'conversion'
 
-		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
-		cursor = cnxn.cursor()
+        cnxn = getConnection()
+        cursor = cnxn.cursor()
 
-		events = cursor.execute(f"""DECLARE @day AS INT
+        events = cursor.execute(f"""DECLARE @day AS INT
 									SET @day = (SELECT DATEPART(dy, clicked_date)
 												FROM Events
 												WHERE clicked_date = (SELECT MAX(clicked_date)
@@ -119,59 +120,57 @@ def statisticsClicks():
 									WHERE DATEPART(dy, clicked_date) >= @day - ?
 									ORDER BY clicked_date ASC""", day).fetchall()
 
-		person_dict = {}
+        person_dict = {}
 
-		for event in events:
-			event_name = event[1]
-			person_id = event[0]
-			if person_id not in person_dict:
-				person_dict[person_id] = [event_name]
-			else:
-				person_dict[person_id].append(event_name)
+        for event in events:
+            event_name = event[1]
+            person_id = event[0]
+            if person_id not in person_dict:
+                person_dict[person_id] = [event_name]
+            else:
+                person_dict[person_id].append(event_name)
 
-		values = []
-		for person_id in person_dict.keys():
-			counter = 0
-			for event_name in person_dict[person_id]:
-				if event_name == name:
-					values.append(counter)
-					break
-				counter += 1
+        values = []
+        for person_id in person_dict.keys():
+            counter = 0
+            for event_name in person_dict[person_id]:
+                if event_name == name:
+                    values.append(counter)
+                    break
+                counter += 1
 
-		out = {"field":'total', "values":values}
+        out = {"field": 'total', "values": values}
 
-		cnxn.close()
-		return jsonify(out)
+        cnxn.close()
+        return jsonify(out)
+
 
 @app.route('/api/statistics/clicks/device', methods=['GET'])
 def statisticsClicksDevice():
-	if request.method == 'GET':
-		name = request.args.get("event_name")
-		day = request.args.get("timestamp")
-		if day is None:
-			day = 0
-		elif day == "today":
-			day = 0 
-		elif day == "lastweek":
-			day = 6
-		elif day == "lastmonth":
-			day = 29
-		if name is None:
-			name = 'conversion'
+    if request.method == 'GET':
+        name = request.args.get("event_name")
+        day = request.args.get("timestamp")
+        if day is None:
+            day = 0
+        elif day == "today":
+            day = 0
+        elif day == "lastweek":
+            day = 6
+        elif day == "lastmonth":
+            day = 29
+        if name is None:
+            name = 'conversion'
 
-		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
-		cursor = cnxn.cursor()
-		# selecting all devices
-		devices = cursor.execute(f"""SELECT DISTINCT device
+        cnxn = getConnection()
+        cursor = cnxn.cursor()
+        # selecting all devices
+        devices = cursor.execute(f"""SELECT DISTINCT device
 								FROM Persons""").fetchall()
 
-		out = {}
-		for device in devices:
-			device = device[0]
-			events = cursor.execute(f"""DECLARE @day AS INT
+        out = {}
+        for device in devices:
+            device = device[0]
+            events = cursor.execute(f"""DECLARE @day AS INT
 										SET @day = (SELECT DATEPART(dy, clicked_date)
 													FROM Events
 													WHERE clicked_date = (SELECT MAX(clicked_date)
@@ -184,63 +183,62 @@ def statisticsClicksDevice():
 										WHERE DATEPART(dy, clicked_date) >= @day - ? AND device=?
 										ORDER BY clicked_date ASC""", day, device).fetchall()
 
-			person_dict = {}
+            person_dict = {}
 
-			for event in events:
-				event_name = event[1]
-				person_id = event[0]
-				if person_id not in person_dict:
-					person_dict[person_id] = [event_name]
-				else:
-					person_dict[person_id].append(event_name)
+            for event in events:
+                event_name = event[1]
+                person_id = event[0]
+                if person_id not in person_dict:
+                    person_dict[person_id] = [event_name]
+                else:
+                    person_dict[person_id].append(event_name)
 
-			values = []
-			for person_id in person_dict.keys():
-				counter = 0
-				for event_name in person_dict[person_id]:
-					if event_name == name:
-						values.append(counter)
-						break
-					counter += 1
+            values = []
+            for person_id in person_dict.keys():
+                counter = 0
+                for event_name in person_dict[person_id]:
+                    if event_name == name:
+                        values.append(counter)
+                        break
+                    counter += 1
 
-			out[device] = values
+            out[device] = values
 
-		cnxn.close()
-		return jsonify(out)
+        cnxn.close()
+        return jsonify(out)
+
 
 @app.route('/api/statistics/time/locale', methods=['GET'])
 def statisticsTimeLocale():
-	pass
+    pass
+
 
 @app.route('/api/statistics/time/device', methods=['GET'])
 def statisticsTimeDevice():
-	if request.method == 'GET':
-		name = request.args.get("event_name")
-		day = request.args.get("timestamp")
-		if day is None:
-			day = 0
-		elif day == "today":
-			day = 0 
-		elif day == "lastweek":
-			day = 6
-		elif day == "lastmonth":
-			day = 29
-		if name is None:
-			name = 'conversion'
+    if request.method == 'GET':
+        name = request.args.get("event_name")
+        day = request.args.get("timestamp")
+        if day is None:
+            day = 0
+        elif day == "today":
+            day = 0
+        elif day == "lastweek":
+            day = 6
+        elif day == "lastmonth":
+            day = 29
+        if name is None:
+            name = 'conversion'
 
-		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
-		cursor = cnxn.cursor()
-		# selecting all devices
-		devices = cursor.execute(f"""SELECT DISTINCT device
+        cnxn = getConnection()
+        cursor = cnxn.cursor()
+        # selecting all devices
+        devices = cursor.execute(f"""SELECT DISTINCT device
 								FROM Persons""").fetchall()
 
-		out = {}
-		for device in devices:
-			device = device[0]
-			events = cursor.execute(f"""DECLARE @day AS INT
+        out = {}
+        for device in devices:
+            device = device[0]
+            events = cursor.execute(f"""DECLARE @day AS INT
 										SET @day = (SELECT DATEPART(dy, clicked_date)
 													FROM Events
 													WHERE clicked_date = (SELECT MAX(clicked_date)
@@ -254,45 +252,43 @@ def statisticsTimeDevice():
 										WHERE DATEPART(dy, clicked_date) >= @day - ? AND device=?
 										ORDER BY clicked_date ASC""", day, device).fetchall()
 
-			person_dict = {}
+            person_dict = {}
 
-			for event in events:
-				event_name = event[1]
-				person_id = event[0]
-				date = event[2]
-				if person_id not in person_dict:
-					person_dict[person_id] = [[event_name, date]]
-				else:
-					person_dict[person_id].append([event_name, date])
+            for event in events:
+                event_name = event[1]
+                person_id = event[0]
+                date = event[2]
+                if person_id not in person_dict:
+                    person_dict[person_id] = [[event_name, date]]
+                else:
+                    person_dict[person_id].append([event_name, date])
 
-			values = []
-			for person_id in person_dict.keys():
-				events = person_dict[person_id]
-				start = events[0][1]
-				for event in events:
-					event_name = event[0]
-					date = event[1]
-					if event_name == name:
-						values.append(round((date - start).total_seconds()))
-						break
+            values = []
+            for person_id in person_dict.keys():
+                events = person_dict[person_id]
+                start = events[0][1]
+                for event in events:
+                    event_name = event[0]
+                    date = event[1]
+                    if event_name == name:
+                        values.append(round((date - start).total_seconds()))
+                        break
 
-			out[device] = values
+            out[device] = values
 
-		cnxn.close()
-		return jsonify(out)
+        cnxn.close()
+        return jsonify(out)
+
 
 @app.route('/api/metrics/urls/top-pages', methods=['GET'])
 def metricsUrls():
-	if request.method == 'GET':
-		n = request.args.get("n")
+    if request.method == 'GET':
+        n = request.args.get("n")
 
-		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
-		cursor = cnxn.cursor()
+        cnxn = getConnection()
+        cursor = cnxn.cursor()
 
-		pages = cursor.execute(f"""SELECT   urL,
+        pages = cursor.execute(f"""SELECT   urL,
 											unique_clicks,
 											total_clicks,
 											timeOnPage,
@@ -311,40 +307,38 @@ def metricsUrls():
 									                                        ORDER BY ratio_time DESC)
 									ORDER BY total_clicks DESC""").fetchall()
 
-		out = []
-		if n is None:
-			for page in pages:
-				out.append({"url":page[0],
-							"uniqueClicks":page[1],
-							"totalClicks":page[2],
-							"timeOnPageAvg":page[3],
-							"timeOnPageFilteredAvg":page[4],
-							"pageBeforeConversion":page[5],
-							"pageBeforeShare":page[6]})
-		else:
-			for page in pages[0:int(n)]:
-				out.append({"url":page[0],
-							"uniqueClicks":page[1],
-							"totalClicks":page[2],
-							"timeOnPageAvg":page[3],
-							"timeOnPageFilteredAvg":page[4],
-							"pageBeforeConversion":page[5],
-							"pageBeforeShare":page[6]})
-		cnxn.close()
-		return jsonify(out)
+        out = []
+        if n is None:
+            for page in pages:
+                out.append({"url": page[0],
+                            "uniqueClicks": page[1],
+                            "totalClicks": page[2],
+                            "timeOnPageAvg": page[3],
+                            "timeOnPageFilteredAvg": page[4],
+                            "pageBeforeConversion": page[5],
+                            "pageBeforeShare": page[6]})
+        else:
+            for page in pages[0:int(n)]:
+                out.append({"url": page[0],
+                            "uniqueClicks": page[1],
+                            "totalClicks": page[2],
+                            "timeOnPageAvg": page[3],
+                            "timeOnPageFilteredAvg": page[4],
+                            "pageBeforeConversion": page[5],
+                            "pageBeforeShare": page[6]})
+        cnxn.close()
+        return jsonify(out)
+
 
 @app.route('/api/metrics/urls/top-products', methods=['GET'])
 def metricsProducts():
-	if request.method == 'GET':
-		n = request.args.get("n")
+    if request.method == 'GET':
+        n = request.args.get("n")
 
-		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
-		cursor = cnxn.cursor()
+        cnxn = getConnection()
+        cursor = cnxn.cursor()
 
-		pages = cursor.execute(f"""SELECT urL,
+        pages = cursor.execute(f"""SELECT urL,
 											unique_clicks,
 											total_clicks,
 											timeOnPage,
@@ -363,28 +357,28 @@ def metricsProducts():
 									                                        ORDER BY ratio_time DESC)
 									ORDER BY total_clicks DESC""").fetchall()
 
-		out = []
-		if n is None:
-			for page in pages:
-				out.append({"url":page[0],
-							"uniqueClicks":page[1],
-							"totalClicks":page[2],
-							"timeOnPageAvg":page[3],
-							"timeOnPageFilteredAvg":page[4],
-							"pageBeforeConversion":page[5],
-							"pageBeforeShare":page[6]})
-		else:
-			for page in pages[0:int(n)]:
-				out.append({"url":page[0],
-							"uniqueClicks":page[1],
-							"totalClicks":page[2],
-							"timeOnPageAvg":page[3],
-							"timeOnPageFilteredAvg":page[4],
-							"pageBeforeConversion":page[5],
-							"pageBeforeShare":page[6]})
-		cnxn.close()
-		return jsonify(out)
+        out = []
+        if n is None:
+            for page in pages:
+                out.append({"url": page[0],
+                            "uniqueClicks": page[1],
+                            "totalClicks": page[2],
+                            "timeOnPageAvg": page[3],
+                            "timeOnPageFilteredAvg": page[4],
+                            "pageBeforeConversion": page[5],
+                            "pageBeforeShare": page[6]})
+        else:
+            for page in pages[0:int(n)]:
+                out.append({"url": page[0],
+                            "uniqueClicks": page[1],
+                            "totalClicks": page[2],
+                            "timeOnPageAvg": page[3],
+                            "timeOnPageFilteredAvg": page[4],
+                            "pageBeforeConversion": page[5],
+                            "pageBeforeShare": page[6]})
+        cnxn.close()
+        return jsonify(out)
+
 
 if __name__ == '__main__':
-	app.run()
-
+    app.run()
