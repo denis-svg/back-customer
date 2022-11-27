@@ -93,7 +93,7 @@
 #### ?n=4 (number of urls that you want default is all)
 ```json
 [
-{                           "url":en/us,
+{                           				"url":"en/us",
 							"uniqueClicks":1414,
 							"totalClicks":5235235,
 							"timeOnPageAvg":3122,
