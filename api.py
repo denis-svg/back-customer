@@ -281,6 +281,57 @@ def statisticsTimeDevice():
 		cnxn.close()
 		return jsonify(out)
 
+@app.route('/api/metrics/top-pages', methods=['GET'])
+def metricsUrls():
+	if request.method == 'GET':
+		n = request.args.get("n")
+
+		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
+                        Server=tcp:prenaissance.database.windows.net,1433;
+                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
+                        TrustServerCertificate=no;Connection Timeout=30;""")
+		cursor = cnxn.cursor()
+
+		pages = cursor.execute(f"""SELECT   urL,
+											unique_clicks,
+											total_clicks,
+											timeOnPage,
+											timeOnPage_filtered,
+											pageBeforeConversion,
+											pageBeforeShare
+									FROM Urls
+									WHERE ratio_clicks < 1 AND ratio_time < (SELECT TOP(1)
+									                                                ratio_time
+									                                        FROM Urls
+									                                        WHERE ratio_time IN (SELECT TOP(50) PERCENT
+									                                                                    ratio_time
+									                                                            FROM Urls
+									                                                            WHERE ratio_clicks < 1 AND ratio_time IS NOT NULL
+									                                                            ORDER BY ratio_time)
+									                                        ORDER BY ratio_time DESC)
+									ORDER BY total_clicks DESC""").fetchall()
+
+		out = []
+		if n is None:
+			for page in pages:
+				out.append({"url":page[0],
+							"uniqueClicks":page[1],
+							"totalClicks":page[2],
+							"timeOnPageAvg":page[3],
+							"timeOnPageFilteredAvg":page[4],
+							"pageBeforeConversion":page[5],
+							"pageBeforeShare":page[6]})
+		else:
+			for page in pages[0:int(n)]:
+				out.append({"url":page[0],
+							"uniqueClicks":page[1],
+							"totalClicks":page[2],
+							"timeOnPageAvg":page[3],
+							"timeOnPageFilteredAvg":page[4],
+							"pageBeforeConversion":page[5],
+							"pageBeforeShare":page[6]})
+		cnxn.close()
+		return jsonify(out)
 
 if __name__ == '__main__':
 	app.run()
