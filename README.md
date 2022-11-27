@@ -100,9 +100,6 @@
 							"timeOnPageFilteredAvg":121,
 							"pageBeforeConversion":144,
 							"pageBeforeShare":65
-},
-{
-        ....
 }
 ]
 ```
