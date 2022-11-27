@@ -214,7 +214,72 @@ def statisticsTimeLocale():
 
 @app.route('/api/statistics/time/device', methods=['GET'])
 def statisticsTimeDevice():
-	pass
+	if request.method == 'GET':
+		name = request.args.get("event_name")
+		day = request.args.get("timestamp")
+		if day is None:
+			day = 0
+		elif day == "today":
+			day = 0 
+		elif day == "lastweek":
+			day = 6
+		elif day == "lastmonth":
+			day = 29
+		if name is None:
+			name = 'conversion'
+
+		cnxn = pyodbc.connect("""Driver={ODBC Driver 13 for SQL Server};
+                        Server=tcp:prenaissance.database.windows.net,1433;
+                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
+                        TrustServerCertificate=no;Connection Timeout=30;""")
+		cursor = cnxn.cursor()
+		# selecting all devices
+		devices = cursor.execute(f"""SELECT DISTINCT device
+								FROM Persons""").fetchall()
+
+		out = {}
+		for device in devices:
+			device = device[0]
+			events = cursor.execute(f"""DECLARE @day AS INT
+										SET @day = (SELECT DATEPART(dy, clicked_date)
+													FROM Events
+													WHERE clicked_date = (SELECT MAX(clicked_date)
+													FROM Events))
+										SELECT Events.person_id,
+												Events.event_name,
+												Events.clicked_date
+										FROM Events
+										INNER JOIN Persons
+										ON Persons.person_id = Events.person_id
+										WHERE DATEPART(dy, clicked_date) >= @day - ? AND device=?
+										ORDER BY clicked_date ASC""", day, device).fetchall()
+
+			person_dict = {}
+
+			for event in events:
+				event_name = event[1]
+				person_id = event[0]
+				date = event[2]
+				if person_id not in person_dict:
+					person_dict[person_id] = [[event_name, date]]
+				else:
+					person_dict[person_id].append([event_name, date])
+
+			values = []
+			for person_id in person_dict.keys():
+				events = person_dict[person_id]
+				start = events[0][1]
+				for event in events:
+					event_name = event[0]
+					date = event[1]
+					if event_name == name:
+						values.append(round((date - start).total_seconds()))
+						break
+
+			out[device] = values
+
+		cnxn.close()
+		return jsonify(out)
 
 
 if __name__ == '__main__':
