@@ -4,8 +4,8 @@ import pyodbc
 app = Flask(__name__)
 
 
-@app.route('/api/metrics/clicks/Device', methods=['GET'])
-def clicksD():
+@app.route('/api/metrics/clicks/device', methods=['GET'])
+def metricsClicksDevice():
 	if request.method == 'GET':
 		event_name = request.args.get("event_name")
 		if event_name is None:
@@ -41,8 +41,8 @@ def clicksD():
 		cnxn.close()
 		return jsonify(out)
 
-@app.route('/api/metrics/clicks/Locale', methods=['GET'])
-def clicksL():
+@app.route('/api/metrics/clicks/locale', methods=['GET'])
+def metricsClicksLocale():
 	if request.method == 'GET':
 		event_name = request.args.get("event_name")
 		n = request.args.get("n")
@@ -87,7 +87,7 @@ def clicksL():
 		return jsonify(out)
 
 @app.route('/api/statistics/clicks', methods=['GET'])
-def statistics():
+def statisticsClicks():
 	if request.method == 'GET':
 		name = request.args.get("event_name")
 		day = request.args.get("timestamp")
@@ -144,7 +144,7 @@ def statistics():
 		return jsonify(out)
 
 @app.route('/api/statistics/clicks/device', methods=['GET'])
-def statisticsD():
+def statisticsClicksDevice():
 	if request.method == 'GET':
 		name = request.args.get("event_name")
 		day = request.args.get("timestamp")
@@ -207,6 +207,15 @@ def statisticsD():
 
 		cnxn.close()
 		return jsonify(out)
+
+@app.route('/api/statistics/time/locale', methods=['GET'])
+def statisticsTimeLocale():
+	pass
+
+@app.route('/api/statistics/time/device', methods=['GET'])
+def statisticsTimeDevice():
+	pass
+
 
 if __name__ == '__main__':
 	app.run()
