@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_caching import Cache
 import pyodbc
 
 
@@ -9,12 +10,16 @@ def getConnection():
                         Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
                         TrustServerCertificate=no;Connection Timeout=30;""")
 
-
 app = Flask(__name__)
+app.config["CACHE_TYPE"] = 'simple'
+cache = Cache()
+cache.init_app(app)
+
 CORS(app)
 
 
 @app.route('/api/metrics/clicks/device', methods=['GET'])
+@cache.cached(timeout=1000, query_string=True)
 def metricsClicksDevice():
     if request.method == 'GET':
         event_name = request.args.get("event_name")
@@ -50,6 +55,7 @@ def metricsClicksDevice():
 
 
 @app.route('/api/metrics/clicks/locale', methods=['GET'])
+@cache.cached(timeout=1000, query_string=True)
 def metricsClicksLocale():
     if request.method == 'GET':
         event_name = request.args.get("event_name")
@@ -140,11 +146,13 @@ def statisticsClicks(metric: str, column: str):
 
 
 @app.route('/api/statistics/time/locale', methods=['GET'])
+@cache.cached(timeout=1000, query_string=True)
 def statisticsTimeLocale():
     pass
 
 
 @app.route('/api/statistics/time/device', methods=['GET'])
+@cache.cached(timeout=1000, query_string=True)
 def statisticsTimeDevice():
     if request.method == 'GET':
         name = request.args.get("event_name")
@@ -212,6 +220,7 @@ def statisticsTimeDevice():
 
 
 @app.route('/api/metrics/urls/top-pages', methods=['GET'])
+@cache.cached(timeout=1000, query_string=True)
 def metricsUrls():
     if request.method == 'GET':
         n = request.args.get("n")
@@ -262,6 +271,7 @@ def metricsUrls():
 
 
 @app.route('/api/metrics/urls/top-products', methods=['GET'])
+@cache.cached(timeout=1000, query_string=True)
 def metricsProducts():
     if request.method == 'GET':
         n = request.args.get("n")
