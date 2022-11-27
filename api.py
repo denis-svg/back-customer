@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import pyodbc
 
 
@@ -10,6 +11,7 @@ def getConnection():
 
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route('/api/metrics/clicks/device', methods=['GET'])
@@ -90,122 +92,51 @@ def metricsClicksLocale():
         return jsonify(out)
 
 
-@app.route('/api/statistics/clicks', methods=['GET'])
-def statisticsClicks():
-    if request.method == 'GET':
-        name = request.args.get("event_name")
-        day = request.args.get("timestamp")
-        if day is None:
-            day = 0
-        elif day == "today":
-            day = 0
-        elif day == "lastweek":
-            day = 6
-        elif day == "lastmonth":
-            day = 29
-        if name is None:
-            name = 'conversion'
+@app.route('/api/statistics/<metric>/<column>', methods=['GET'])
+def statisticsClicks(metric: str, column: str):
+    valid_metrics = ["clicksToConvert",
+                     "clicksToShare", "timeToConvert", "timeToShare"]
+    if metric.lower() not in map(str.lower, valid_metrics):
+        return "Invalid metric", 400
 
-        cnxn = getConnection()
-        cursor = cnxn.cursor()
+    cnxn = getConnection()
+    cursor = cnxn.cursor()
 
-        events = cursor.execute(f"""DECLARE @day AS INT
-									SET @day = (SELECT DATEPART(dy, clicked_date)
-												FROM Events
-												WHERE clicked_date = (SELECT MAX(clicked_date)
-												FROM Events))
-									SELECT person_id,
-											event_name
-									FROM Events
-									WHERE DATEPART(dy, clicked_date) >= @day - ?
-									ORDER BY clicked_date ASC""", day).fetchall()
+    columnExists = cursor.execute(
+        f"""select 1 from sys.columns where name = ? and object_id = object_id('Persons')""", column)\
+        .fetchone()
+    if columnExists is None:
+        return "Invalid column", 400
 
-        person_dict = {}
+    fields = cursor.execute(f"""with P as (
+                                    select top 1000 *
+                                    from Persons
+                                ),
+                                Groups as (
+                                    select {column}, count(*) as [Count]
+                                    from P
+                                    group by {column}
+                                )
+                                select top 5 {column} from Groups
+                                order by [Count] desc""").fetchall()
 
-        for event in events:
-            event_name = event[1]
-            person_id = event[0]
-            if person_id not in person_dict:
-                person_dict[person_id] = [event_name]
-            else:
-                person_dict[person_id].append(event_name)
+    result = []
+    for field in fields:
+        field = field[0]
+        # select 100 events
 
-        values = []
-        for person_id in person_dict.keys():
-            counter = 0
-            for event_name in person_dict[person_id]:
-                if event_name == name:
-                    values.append(counter)
-                    break
-                counter += 1
+        res = cursor.execute(f"""select top 100
+                                    {metric}
+                                from persons_metric
+                                left join Persons
+                                on persons_metric.person_id = Persons.person_id
+                                where {metric} is not null
+                                and {column} = '{field}'""").fetchall()
 
-        out = {"field": 'total', "values": values}
+        result.append({"field": field, "values": [x[0] for x in res]})
 
-        cnxn.close()
-        return jsonify(out)
-
-
-@app.route('/api/statistics/clicks/device', methods=['GET'])
-def statisticsClicksDevice():
-    if request.method == 'GET':
-        name = request.args.get("event_name")
-        day = request.args.get("timestamp")
-        if day is None:
-            day = 0
-        elif day == "today":
-            day = 0
-        elif day == "lastweek":
-            day = 6
-        elif day == "lastmonth":
-            day = 29
-        if name is None:
-            name = 'conversion'
-
-        cnxn = getConnection()
-        cursor = cnxn.cursor()
-        # selecting all devices
-        devices = cursor.execute(f"""SELECT DISTINCT device
-								FROM Persons""").fetchall()
-
-        out = {}
-        for device in devices:
-            device = device[0]
-            events = cursor.execute(f"""DECLARE @day AS INT
-										SET @day = (SELECT DATEPART(dy, clicked_date)
-													FROM Events
-													WHERE clicked_date = (SELECT MAX(clicked_date)
-													FROM Events))
-										SELECT Events.person_id,
-												Events.event_name
-										FROM Events
-										INNER JOIN Persons
-										ON Persons.person_id = Events.person_id
-										WHERE DATEPART(dy, clicked_date) >= @day - ? AND device=?
-										ORDER BY clicked_date ASC""", day, device).fetchall()
-
-            person_dict = {}
-
-            for event in events:
-                event_name = event[1]
-                person_id = event[0]
-                if person_id not in person_dict:
-                    person_dict[person_id] = [event_name]
-                else:
-                    person_dict[person_id].append(event_name)
-
-            values = []
-            for person_id in person_dict.keys():
-                counter = 0
-                for event_name in person_dict[person_id]:
-                    if event_name == name:
-                        values.append(counter)
-                        break
-                    counter += 1
-
-            out[device] = values
-
-        cnxn.close()
-        return jsonify(out)
+    cnxn.close()
+    return jsonify(result)
 
 
 @app.route('/api/statistics/time/locale', methods=['GET'])
