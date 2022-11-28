@@ -100,7 +100,7 @@ def metricsClicksLocale():
 
 
 @app.route('/api/statistics/<metric>/<column>', methods=['GET'])
-@cache.cached(timeout=1000, query_string=True)
+@cache.memoize(timeout=1000)
 def statisticsClicks(metric: str, column: str):
     valid_metrics = ["clicksToConvert",
                      "clicksToShare", "timeToConvert", "timeToShare"]
@@ -176,7 +176,7 @@ def getTotalClicks():
 
 
 @app.route("/api/metrics/average/<metric>", methods=["GET"])
-@cache.cached(timeout=1000, query_string=True)
+@cache.memoize(timeout=1000)
 def getAverageMetric(metric: str):
     valid_metrics = ["clicksToConvert",
                      "clicksToShare", "timeToConvert", "timeToShare"]
