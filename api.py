@@ -100,6 +100,7 @@ def metricsClicksLocale():
 
 
 @app.route('/api/statistics/<metric>/<column>', methods=['GET'])
+@cache.cached(timeout=1000, query_string=True)
 def statisticsClicks(metric: str, column: str):
     valid_metrics = ["clicksToConvert",
                      "clicksToShare", "timeToConvert", "timeToShare"]
@@ -168,6 +169,7 @@ def getTotalClicks():
                         from Events
                         where clicked_date > dateadd(day, {-days}, @latest)
                         group by {grouping}
+                        order by parse({grouping} as datetime) asc
                         """).fetchall()
 
     return jsonify(list(map(lambda x: {"period": x[1], "value": x[0]}, res)))
