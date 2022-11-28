@@ -1,20 +1,14 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_caching import Cache
-import pyodbc
-
-
-def getConnection():
-    return pyodbc.connect("""Driver={ODBC Driver 17 for SQL Server};
-                        Server=tcp:prenaissance.database.windows.net,1433;
-                        Database=customerpp;Uid=alex;Pwd=Test1234;Encrypt=yes;
-                        TrustServerCertificate=no;Connection Timeout=30;""")
+from persons import persons
+from connection import getConnection
+from cache import cache
 
 
 app = Flask(__name__)
 app.config["CACHE_TYPE"] = 'simple'
-cache = Cache()
 cache.init_app(app)
+app.register_blueprint(persons)
 
 CORS(app)
 
