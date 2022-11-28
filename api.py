@@ -197,7 +197,7 @@ def getAverageMetric(metric: str):
     res = cursor.execute(f"""
                         declare @latest datetime = (select max(clicked_date) from Events)
 
-                        select avg({metric}),
+                        select avg(cast({metric} as float)),
                             {grouping}
                         from persons_metric
                         left join Events
